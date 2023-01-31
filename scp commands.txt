@@ -1,0 +1,5 @@
+scp [file] duckie@csc22917.local:~/scp_temp/
+scp duckie@csc22917.local:~/scp_temp/[file] ~/ProgrammingTools/Duckietown/StandaloneContainers/BagAnalyzer/
+
+scp *.bag duckie@csc22917.local:~/scp_temp/data.bag
+scp duckie@csc22917.local:~/scp_temp/data.bag ~/ProgrammingTools/Duckietown/StandaloneContainers/BagAnalyzer/tensecs.bag

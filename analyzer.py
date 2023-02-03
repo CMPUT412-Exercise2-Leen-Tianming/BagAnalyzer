@@ -48,13 +48,13 @@ for topic, msg, t in bag.read_messages(topics=[]):
             print(f'reading a topic at time {t}: {str(topic)}')
             print(str(msg))
 
-    if topic == '/csc22917/camera_node/image/compressed':
-        if key == 27:
-            break
+    # if topic == '/csc22917/camera_node/image/compressed':
+    #     if key == 27:
+    #         break
 
-        compressed_image = np.frombuffer(msg.data, np.uint8)
-        im = cv2.imdecode(compressed_image, cv2.IMREAD_COLOR)
-        cv2.imshow('test', im)
+    #     compressed_image = np.frombuffer(msg.data, np.uint8)
+    #     im = cv2.imdecode(compressed_image, cv2.IMREAD_COLOR)
+    #     cv2.imshow('test', im)
 bag.close()
 
 for file in output_files.values():

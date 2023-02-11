@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import matplotlib
 import io
+import math
 
 
 def fig_to_im(fig):
@@ -20,6 +21,16 @@ def fig_to_im(fig):
 def plot_path(ax, xList, yList):
     ax.plot(xList, yList, color='r')
 
-def cv_show_plot(fig):
+def plot_xytheta(ax, x, y, theta, color='r'):
+    """
+    ax is pyplot axis
+    """
+    ax.quiver(x, y, math.cos(theta), math.sin(theta), color=color)
+
+def cv_show_plot(ax, fig):
+    ax.set_xlim(-1, 1.5)
+    ax.set_ylim(-1, 1.5)
+    ax.set_aspect('equal', adjustable='box')
     im = fig_to_im(fig)
     cv2.imshow('est', im)
+    ax.cla()

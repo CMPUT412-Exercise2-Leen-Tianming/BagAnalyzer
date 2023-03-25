@@ -3,11 +3,11 @@ import cv2
 
 def find_largest_contour_idx(contours, hierarchy, first_child_idx):
     """
-    first_child_idx specifies the first contour in the level we want to find largest contour of
+    first_child_idx specifies the first contour in the level we want to find the largest contour of
+    return -1 if no contour is in the list or the given first child is not in the list
     """
-    # return None if no contour is in the list or the given first child is not in the list
-    if first_child_idx >= hierarchy.shape[1]:
-        return None
+    if hierarchy is None or first_child_idx >= hierarchy.shape[1]:
+        return -1
 
     i = first_child_idx
     largest_idx = -1

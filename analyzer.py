@@ -26,8 +26,9 @@ recognizer = digit_recognition.Recognizer()
 # recognizer.train_data()
 recognizer.load_model()
 # recognizer.save_model(None)
+recognizer.test_data()
 image_count = 0
-WIDTH = 64
+WIDTH = 32
 
 
 for topic, msg, t in bag.read_messages(topics=[f'/{HOSTNAME}/camera_node/image/compressed']):
@@ -38,7 +39,7 @@ for topic, msg, t in bag.read_messages(topics=[f'/{HOSTNAME}/camera_node/image/c
 
     compressed_image = np.frombuffer(msg.data, np.uint8)
     im = cv2.imdecode(compressed_image, cv2.IMREAD_COLOR)
-    # im = cv2.pyrDown(im)
+    im = cv2.pyrDown(im)
     # im = cv2.flip(cv2.cvtColor(im, cv2.COLOR_BGR2RGB), 1)
     image_count += 1
 
@@ -63,7 +64,11 @@ for topic, msg, t in bag.read_messages(topics=[f'/{HOSTNAME}/camera_node/image/c
             REFERENCE_COLOR = np.array((110, 50, 60), dtype=np.float32)
             STD = np.array((20, 50, 30), dtype=np.float32)
             dim = np.abs((hsv - REFERENCE_COLOR[np.newaxis, np.newaxis, :]) / STD[np.newaxis, np.newaxis, :])
-            crop = np.sum(dim, axis=2) < 3
+            MIN_VALUE = 3.
+            MAX_VALUE = 3.8
+            crop = (MAX_VALUE - np.minimum(MAX_VALUE, np.maximum(MIN_VALUE, np.sum(dim, axis=2)))) * \
+                   (255.9 / (MAX_VALUE - MIN_VALUE))
+            crop = np.array(crop, dtype=np.uint8)
             plt.imshow(crop)
             plt.show()
             # plt.savefig(f'./images/test{image_count}.png')

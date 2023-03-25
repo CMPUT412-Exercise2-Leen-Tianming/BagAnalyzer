@@ -2,12 +2,19 @@ import tensorflow as tf
 import os
 import cv2
 import numpy as np
+import matplotlib
+from matplotlib import pyplot as plt
 
 
 class Recognizer:
     def __init__(self):
         mnist = tf.keras.datasets.mnist
         (self.x_train, self.y_train), (self.x_test, self.y_test) = mnist.load_data()
+        # for i in range(self.x_train.shape[0]):
+        #     print(self.x_train[i])
+        #     plt.imshow(self.x_train[i])
+        #     plt.show()
+        #     plt.cla()
         self.x_train = tf.keras.utils.normalize(self.x_train, axis=1)
         self.x_test = tf.keras.utils.normalize(self.x_test, axis=1)
         self.model = None

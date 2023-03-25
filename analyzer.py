@@ -6,6 +6,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 import util
 import digit_recognition
+from digit_recognition import plt_showim
 import tensorflow as tf
 import tag_contour
 
@@ -21,12 +22,6 @@ bag = rosbag.Bag('data.bag')
 
 TIME_CUTOFF_MIN = 1675038119 #526362452
 TIME_CUTOFF_MAX = math.inf
-
-
-def plt_showim(im):
-    plt.imshow(im)
-    plt.show()
-    plt.cla()
 
 
 def mask_to_grayscale(im, min_value, max_value):
@@ -53,10 +48,16 @@ def main():
     WIDTH = 96
 
     recognizer = digit_recognition.Recognizer()
-    # recognizer.train_data()
-    recognizer.load_model()
-    # recognizer.save_model(None)
+
+    LOAD_MODEL = False
+    if LOAD_MODEL:
+        recognizer.load_model()
+    else:
+        recognizer.train_data()
+        recognizer.save_model(None)
+
     recognizer.test_data()
+    recognizer.test_png()
     image_count = 0
 
     for topic, msg, t in bag.read_messages(topics=[f'/{HOSTNAME}/camera_node/image/compressed']):
@@ -71,7 +72,7 @@ def main():
         # im = cv2.flip(cv2.cvtColor(im, cv2.COLOR_BGR2RGB), 1)
         image_count += 1
 
-        if image_count % 5 == 0:
+        if image_count % 20 == 0:
             selectim = np.copy(im)
             pltim = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
@@ -119,8 +120,8 @@ def main():
                 # plt_showim(digit_im)
 
                 digit = int(recognizer.detect_digit(digit_im))
-                impath = f'../plots/im_{image_count}_{i}_{digit}.png'
-                cv2.imwrite(impath, digit_im)
+                # impath = f'../plots/im_{image_count}_{i}_{digit}.png'
+                # cv2.imwrite(impath, digit_im)
                 print(f'recognized digit:{digit}')
                 pltim = cv2.putText(pltim, str(digit), (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 1, cv2.LINE_AA)
                 pltim = cv2.polylines(pltim, np.array(

@@ -2,42 +2,90 @@ import tensorflow as tf
 import os
 import cv2
 import numpy as np
-import matplotlib
 from matplotlib import pyplot as plt
+from scipy.ndimage import rotate, shift
+import random
+
+
+def plt_showim(im):
+    plt.imshow(im)
+    plt.show()
+    plt.cla()
 
 
 class Recognizer:
     def __init__(self):
         mnist = tf.keras.datasets.mnist
         (self.x_train, self.y_train), (self.x_test, self.y_test) = mnist.load_data()
-        # for i in range(self.x_train.shape[0]):
-        #     print(self.x_train[i])
-        #     plt.imshow(self.x_train[i])
-        #     plt.show()
-        #     plt.cla()
-        self.x_train = tf.keras.utils.normalize(self.x_train, axis=1)
-        self.x_test = tf.keras.utils.normalize(self.x_test, axis=1)
+
+        for i in range(self.x_train.shape[0]):
+            self.x_train[i] = cv2.dilate(self.x_train[i], np.ones((3, 3), np.uint8), iterations=1)
+            # plt_showim(self.x_train[i])
+
+        with open('../dataset_model/TMNIST_Data.csv', 'r') as tminst:
+            lines = tminst.readlines()
+            x_train = np.zeros((len(lines), 28, 28), dtype=np.uint8)
+            y_train = np.zeros(len(lines))
+            for l in range(1, len(lines)):
+                line = lines[l]
+                words = line.split(',')[-(28 * 28 + 1):]  # some font name will contain ',' character
+                label = int(words[0])
+                for i in range(28):
+                    for j in range(28):
+                        idx = i * 28 + j + 1
+                        x_train[l][i][j] = int(words[idx])
+                y_train[l] = label
+                # plt_showim(self.x_train[l])
+            self.x_train = np.concatenate((self.x_train, x_train), axis=0)
+            self.y_train = np.concatenate((self.y_train, y_train), axis=0)
+
         self.model = None
 
     def train_data(self):
         print("TRAINING THE DATA")
+        DROPOUT_RATE = .1
         self.model = tf.keras.models.Sequential()
-        self.model.add(tf.keras.layers.InputLayer(input_shape=(28,28)))
-        self.model.add(tf.keras.layers.Flatten(input_shape=(28,28)))
-        self.model.add(tf.keras.layers.Dense(250,activation="relu"))
-        self.model.add(tf.keras.layers.Dense(100,activation="relu"))
-        self.model.add(tf.keras.layers.Dense(10,activation="softmax"))
+        self.model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
+        self.model.add(tf.keras.layers.Dense(250, activation="relu"))
+        self.model.add(tf.keras.layers.Dropout(DROPOUT_RATE))
+        self.model.add(tf.keras.layers.Dense(100, activation="relu"))
+        self.model.add(tf.keras.layers.Dense(10, activation="softmax"))
 
-        self.model.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+        self.model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-        self.model.fit(self.x_train, self.y_train, epochs=10)
+        # augment the dataset
+        # aug_train_x = []
+        # aug_train_y = []
+        # nim = self.x_train.shape[0]
+        # DEGREES_RANGE = 5.
+        # SHIFT_RANGE = 2.
+        # for i in range(10):
+        #     cur_x = np.zeros(self.x_train.shape, dtype=np.uint8)
+        #     for j in range(nim):
+        #         # plt_showim(self.x_train[j])
+        #         rot = DEGREES_RANGE * (random.random() * 2 - 1.)
+        #         shiftx = SHIFT_RANGE * (random.random() * 2 - 1.)
+        #         shifty = SHIFT_RANGE * (random.random() * 2 - 1.)
+        #         cur_x[j] = rotate(self.x_train[j], rot, reshape=False)
+        #         cur_x[j] = shift(cur_x[j], (shiftx, shifty))
+        #         # plt_showim(cur_x[j])
+        #     aug_train_x.append(cur_x)
+        #     aug_train_y.append(self.y_train)
+        # aug_train_x = np.concatenate(aug_train_x, axis=0)
+        # aug_train_y = np.concatenate(aug_train_y, axis=0)
+        aug_train_x = self.x_train
+        aug_train_y = self.y_train
+
+        aug_train_x = tf.keras.utils.normalize(aug_train_x, axis=1)
+        self.model.fit(aug_train_x, aug_train_y, epochs=10)
 
         print("TRAINING IS DONE")
 
     def test_data(self):
         print("TESTING THE DATA")
 
-        loss, accuracy = self.model.evaluate(self.x_test, self.y_test)
+        x_test = tf.keras.utils.normalize(self.x_test, axis=1)
+        loss, accuracy = self.model.evaluate(x_test, self.y_test)
         print(f"Loss: {loss}")
         print(f"Accuracy: {accuracy}")
 
@@ -55,17 +103,25 @@ class Recognizer:
         self.model = tf.keras.models.load_model(folder_path)
 
     def detect_digit(self, im):
-        prediction = self.model.predict(im[np.newaxis, :, :])
+        im = tf.keras.utils.normalize(im, axis=0)
+        prediction = self.model.predict(im[np.newaxis, :, :], verbose=0)
         return np.argmax(prediction)
 
     def test_png(self):
         image_number = 0
-        digit_path = self.path + "/src/digits"
-        while os.path.isfile(f"{digit_path}/{image_number}.png"):
-            img = cv2.imread(f"{digit_path}/{image_number}.png")[:, :, 0]
-            img = np.invert(np.array([img]))
-            prediction = self.model.predict(img)
-            print(f"The digit detected is: {np.argmax(prediction)}")
-
-            image_number += 1
+        digit_path = '../plots'
+        correct, all = 0, 0
+        for path in os.listdir(digit_path):
+            if path[-4:] != '.png':
+                continue
+            strs = path.split('_')
+            label = int(strs[0])
+            testim = cv2.imread(f"{digit_path}/{path}")[:, :, 0]
+            prediction = self.detect_digit(testim)
+            if prediction == label:
+                correct += 1
+            else:
+                print(f'true: {label}, predicted: {prediction} path:{path}')
+            all += 1
+        print(f'accuracy: {correct}/{all}')
 

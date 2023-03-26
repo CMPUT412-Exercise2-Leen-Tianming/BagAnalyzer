@@ -21,7 +21,7 @@ def augment_dataset(x_train, y_train):
     nim = x_train.shape[0]
     DEGREES_RANGE = 8.
     SHIFT_RANGE = 2.
-    for i in range(10):
+    for i in range(20):
         cur_x = np.zeros(x_train.shape, dtype=np.uint8)
         for j in range(nim):
             # plt_showim(self.x_train[j])
@@ -61,8 +61,10 @@ class Recognizer:
                         x_train[l][i][j] = int(words[idx])
                 y_train[l] = label
                 # plt_showim(self.x_train[l])
-            self.x_train = np.concatenate((self.x_train, x_train), axis=0)
-            self.y_train = np.concatenate((self.y_train, y_train), axis=0)
+            # self.x_train = np.concatenate((self.x_train, x_train), axis=0)
+            # self.y_train = np.concatenate((self.y_train, y_train), axis=0)
+            self.x_train_2 = x_train
+            self.y_train_2 = y_train
 
         bag = rosbag.Bag('collected_digit.bag')
         label_table = read_dict()
@@ -78,8 +80,10 @@ class Recognizer:
             x_train.append(im)
             y_train.append(label)
         x_train, y_train = augment_dataset(np.array(x_train, dtype=np.uint8), np.array(y_train))
-        self.x_train = np.concatenate((self.x_train, x_train), axis=0)
-        self.y_train = np.concatenate((self.y_train, y_train), axis=0)
+        # self.x_train = np.concatenate((self.x_train, x_train), axis=0)
+        # self.y_train = np.concatenate((self.y_train, y_train), axis=0)
+        self.x_train_3 = x_train
+        self.y_train_3 = y_train
 
         self.model = None
 
@@ -92,6 +96,7 @@ class Recognizer:
         self.model.add(tf.keras.layers.Dropout(DROPOUT_RATE))
         self.model.add(tf.keras.layers.Dense(100, activation="relu"))
         self.model.add(tf.keras.layers.Dense(10, activation="softmax"))
+        print("Number of layers in the base model: ", len(self.model.layers))
 
         self.model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
@@ -115,13 +120,20 @@ class Recognizer:
         #     aug_train_y.append(self.y_train)
         # aug_train_x = np.concatenate(aug_train_x, axis=0)
         # aug_train_y = np.concatenate(aug_train_y, axis=0)
-        aug_train_x = self.x_train
-        aug_train_y = self.y_train
-
+        aug_train_x = np.concatenate((self.x_train, self.x_train_2, self.x_train_3))
+        aug_train_y = np.concatenate((self.y_train, self.y_train_2, self.y_train_3))
         aug_train_x = tf.keras.utils.normalize(aug_train_x, axis=1)
         self.model.fit(aug_train_x, aug_train_y, epochs=10)
 
         print("TRAINING IS DONE")
+
+    def finetune(self):
+        for layer in self.model.layers[:3]:
+            layer.trainable = False
+        aug_train_x = self.x_train_3
+        aug_train_y = self.y_train_3
+        aug_train_x = tf.keras.utils.normalize(aug_train_x, axis=1)
+        self.model.fit(aug_train_x, aug_train_y, epochs=10)
 
     def test_data(self):
         print("TESTING THE DATA")

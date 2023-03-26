@@ -49,7 +49,7 @@ def main():
 
     recognizer = digit_recognition.Recognizer()
 
-    LOAD_MODEL = False
+    LOAD_MODEL = True
     if LOAD_MODEL:
         recognizer.load_model()
     else:
@@ -72,7 +72,7 @@ def main():
         # im = cv2.flip(cv2.cvtColor(im, cv2.COLOR_BGR2RGB), 1)
         image_count += 1
 
-        if image_count % 20 == 0:
+        if image_count % 2 == 0:
             selectim = np.copy(im)
             pltim = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 

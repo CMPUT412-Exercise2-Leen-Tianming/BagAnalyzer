@@ -1,4 +1,4 @@
-import rosbag
+import rosbags
 import cv2
 import numpy as np
 import math
@@ -12,7 +12,7 @@ import wheel_int
 HOSTNAME = "csc22917"
 
 
-bag = rosbag.Bag('collected_digit.bag')
+bag = rosbags.Bag('collected_digit.bag')
 
 output_files = {}
 

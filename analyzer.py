@@ -1,4 +1,4 @@
-import rosbag
+import rosbags
 import cv2
 import numpy as np
 import math
@@ -17,7 +17,7 @@ import tag_contour
 HOST_NAME = 'csc22917'
 
 
-bag = rosbag.Bag('data.bag')
+bag = rosbags.Bag('data.bag')
 
 
 TIME_CUTOFF_MIN = 1675038119 #526362452

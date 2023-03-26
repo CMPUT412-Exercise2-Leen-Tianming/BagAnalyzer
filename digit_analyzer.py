@@ -1,4 +1,4 @@
-import rosbag
+import rosbags
 import cv2
 import numpy as np
 import math
@@ -11,7 +11,7 @@ from digit_bag_util import read_dict
 HOST_NAME = 'csc22917'
 
 
-bag = rosbag.Bag('collected_digit.bag')
+bag = rosbags.Bag('collected_digit.bag')
 
 
 TIME_CUTOFF_MIN = 1675038119 #526362452

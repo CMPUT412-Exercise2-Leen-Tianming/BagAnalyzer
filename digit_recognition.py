@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage import rotate, shift
 import random
-import rosbag
+import rosbags
 from digit_bag_util import read_dict
 
 
@@ -66,7 +66,7 @@ class Recognizer:
             self.x_train_2 = x_train
             self.y_train_2 = y_train
 
-        bag = rosbag.Bag('collected_digit.bag')
+        bag = rosbags.Bag('collected_digit.bag')
         label_table = read_dict()
         x_train = []
         y_train = []
@@ -90,13 +90,21 @@ class Recognizer:
     def train_data(self):
         print("TRAINING THE DATA")
         DROPOUT_RATE = .1
-        self.model = tf.keras.models.Sequential()
-        self.model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
-        self.model.add(tf.keras.layers.Dense(250, activation="relu"))
-        self.model.add(tf.keras.layers.Dropout(DROPOUT_RATE))
-        self.model.add(tf.keras.layers.Dense(100, activation="relu"))
-        self.model.add(tf.keras.layers.Dense(10, activation="softmax"))
+        base_model = tf.keras.applications.Xception(
+        weights='imagenet',  # Load weights pre-trained on ImageNet.
+        input_shape=(28, 28),
+        include_top=False)  # Do not include the ImageNet classifier at the top.
+        base_model.trainable = False
+        inputs = tf.keras.Input(shape=(28, 28))
+        x = base_model(inputs, training=False)
+        x = tf.keras.layers.Flatten(input_shape=(28, 28))(x)
+        x = tf.keras.layers.Dense(250, activation="relu")(x)
+        x = tf.keras.layers.Dropout(DROPOUT_RATE)(x)
+        x = tf.keras.layers.Dense(100, activation="relu")(x)
+        outputs = tf.keras.layers.Dense(10, activation="softmax")(x)
         print("Number of layers in the base model: ", len(self.model.layers))
+
+        self.model = tf.keras.Model(inputs, outputs)
 
         self.model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
@@ -123,7 +131,9 @@ class Recognizer:
         aug_train_x = np.concatenate((self.x_train, self.x_train_2, self.x_train_3))
         aug_train_y = np.concatenate((self.y_train, self.y_train_2, self.y_train_3))
         aug_train_x = tf.keras.utils.normalize(aug_train_x, axis=1)
-        self.model.fit(aug_train_x, aug_train_y, epochs=10)
+        
+        aug_train_x_3 = tf.keras.utils.normalize(self.x_train_3, axis=1)
+        self.model.fit(aug_train_x_3, self.y_train_3, epochs=10)
 
         print("TRAINING IS DONE")
 

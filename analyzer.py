@@ -14,7 +14,7 @@ import tag_contour
 # matplotlib.use('Agg')
 
 
-HOSTNAME = 'csc22917'
+HOST_NAME = 'csc22917'
 
 
 bag = rosbag.Bag('data.bag')
@@ -60,7 +60,7 @@ def main():
     recognizer.test_png()
     image_count = 0
 
-    for topic, msg, t in bag.read_messages(topics=[f'/{HOSTNAME}/camera_node/image/compressed']):
+    for topic, msg, t in bag.read_messages(topics=[f'/{HOST_NAME}/camera_node/image/compressed']):
         if t.secs < TIME_CUTOFF_MIN:
             continue
         elif t.secs > TIME_CUTOFF_MAX:

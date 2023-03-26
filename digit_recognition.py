@@ -5,12 +5,37 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage import rotate, shift
 import random
+import rosbag
+from digit_bag_util import read_dict
 
 
 def plt_showim(im):
     plt.imshow(im)
     plt.show()
     plt.cla()
+
+
+def augment_dataset(x_train, y_train):
+    aug_train_x = []
+    aug_train_y = []
+    nim = x_train.shape[0]
+    DEGREES_RANGE = 8.
+    SHIFT_RANGE = 2.
+    for i in range(10):
+        cur_x = np.zeros(x_train.shape, dtype=np.uint8)
+        for j in range(nim):
+            # plt_showim(self.x_train[j])
+            rot = DEGREES_RANGE * (random.random() * 2 - 1.)
+            shiftx = SHIFT_RANGE * (random.random() * 2 - 1.)
+            shifty = SHIFT_RANGE * (random.random() * 2 - 1.)
+            cur_x[j] = rotate(x_train[j], rot, reshape=False)
+            cur_x[j] = shift(cur_x[j], (shiftx, shifty))
+            # plt_showim(cur_x[j])
+        aug_train_x.append(cur_x)
+        aug_train_y.append(y_train)
+    aug_train_x = np.concatenate(aug_train_x, axis=0)
+    aug_train_y = np.concatenate(aug_train_y, axis=0)
+    return aug_train_x, aug_train_y
 
 
 class Recognizer:
@@ -39,6 +64,23 @@ class Recognizer:
             self.x_train = np.concatenate((self.x_train, x_train), axis=0)
             self.y_train = np.concatenate((self.y_train, y_train), axis=0)
 
+        bag = rosbag.Bag('collected_digit.bag')
+        label_table = read_dict()
+        x_train = []
+        y_train = []
+        for topic, msg, t in bag.read_messages(topics=[]):
+            compressed_image = np.frombuffer(msg.data, np.uint8)
+            seq = msg.header.seq
+            if seq not in label_table:
+                continue
+            label = label_table[seq]
+            im = cv2.imdecode(compressed_image, cv2.IMREAD_COLOR)[:, :, 0]
+            x_train.append(im)
+            y_train.append(label)
+        x_train, y_train = augment_dataset(np.array(x_train, dtype=np.uint8), np.array(y_train))
+        self.x_train = np.concatenate((self.x_train, x_train), axis=0)
+        self.y_train = np.concatenate((self.y_train, y_train), axis=0)
+
         self.model = None
 
     def train_data(self):
@@ -57,7 +99,7 @@ class Recognizer:
         # aug_train_x = []
         # aug_train_y = []
         # nim = self.x_train.shape[0]
-        # DEGREES_RANGE = 5.
+        # DEGREES_RANGE = 8.
         # SHIFT_RANGE = 2.
         # for i in range(10):
         #     cur_x = np.zeros(self.x_train.shape, dtype=np.uint8)

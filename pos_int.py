@@ -12,7 +12,7 @@ import wheel_int
 HOSTNAME = "csc22917"
 
 
-bag = rosbag.Bag('data.bag')
+bag = rosbag.Bag('collected_digit.bag')
 
 output_files = {}
 
